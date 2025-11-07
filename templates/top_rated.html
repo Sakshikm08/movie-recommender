@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Rated Movies - Movie Recommender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="navbar-brand">
+                🎬 Movie Recommender
+            </a>
+            <ul class="navbar-nav">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/search" class="nav-link">Search</a></li>
+                <li><a href="/recommendations" class="nav-link">Recommendations</a></li>
+                <li><a href="/top-rated" class="nav-link">Top Rated</a></li>
+                <li><a href="/genre" class="nav-link">Genres</a></li>
+                <li><a href="/statistics" class="nav-link">Statistics</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1>🌟 Top Rated Movies</h1>
+            <p>The highest-rated movies in our database</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="movie-grid">
+                {% for movie in movies %}
+                <div class="movie-card">
+                    <h3>#{{ loop.index }} {{ movie.title_x }}</h3>
+                    <div>
+                        <span class="movie-rating">⭐ {{ movie.vote_average }}/10</span>
+                        <span class="similarity-badge">
+                            📊 Score: {{ "%.2f"|format(movie.score) }}
+                        </span>
+                    </div>
+                    <p class="movie-genres">🎭 {{ movie.genres }}</p>
+                    <p class="movie-overview">{{ movie.overview }}</p>
+                    <p class="movie-meta">
+                        📅 {{ movie.release_date }} | 
+                        👥 {{ "{:,}".format(movie.vote_count) }} votes
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>Built with ❤️ using Flask, Python, and TMDB Dataset</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

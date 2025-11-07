@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Recommendations - Movie Recommender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="navbar-brand">
+                🎬 Movie Recommender
+            </a>
+            <ul class="navbar-nav">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/search" class="nav-link">Search</a></li>
+                <li><a href="/recommendations" class="nav-link">Recommendations</a></li>
+                <li><a href="/top-rated" class="nav-link">Top Rated</a></li>
+                <li><a href="/genre" class="nav-link">Genres</a></li>
+                <li><a href="/statistics" class="nav-link">Statistics</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1>🎯 Get Personalized Recommendations</h1>
+            <p>Discover movies similar to your favorites</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Recommendation Form -->
+            <div class="form-section">
+                <form method="POST" action="/recommendations">
+                    <div class="form-group">
+                        <label for="movie">Select a movie you like:</label>
+                        <select id="movie" name="movie" class="form-control" required>
+                            <option value="">Choose a movie...</option>
+                            {% for title in movie_titles %}
+                            <option value="{{ title }}" {% if selected_movie == title %}selected{% endif %}>
+                                {{ title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="num_recommendations">Number of recommendations:</label>
+                        <input type="number" 
+                               id="num_recommendations" 
+                               name="num_recommendations" 
+                               class="form-control" 
+                               min="5" 
+                               max="20" 
+                               value="10">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-gradient">Get Recommendations</button>
+                </form>
+            </div>
+
+            <!-- Recommendations Results -->
+            {% if recommendations %}
+                <div class="alert alert-success">
+                    ✨ Because you liked <strong>{{ selected_movie }}</strong>
+                </div>
+                
+                <div class="movie-grid">
+                    {% for movie in recommendations %}
+                    <div class="movie-card">
+                        <h3>{{ loop.index }}. {{ movie.title_x }}</h3>
+                        <div>
+                            <span class="movie-rating">⭐ {{ movie.vote_average }}/10</span>
+                            <span class="similarity-badge">
+                                🎯 {{ "%.1f"|format(movie.similarity_score * 100) }}% Match
+                            </span>
+                        </div>
+                        <p class="movie-genres">🎭 {{ movie.genres }}</p>
+                        <p class="movie-overview">{{ movie.overview }}</p>
+                        <p class="movie-meta">📅 {{ movie.release_date }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>Built with ❤️ using Flask, Python, and TMDB Dataset</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
