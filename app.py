@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from recommendation_engine import MovieRecommender
 import json
+from recommendation_engine import MovieRecommender, GroqMovieEnhancer
 
 app = Flask(__name__)
 
@@ -152,3 +153,87 @@ def api_recommend(movie):
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5000)
+
+
+
+
+# Initialize both recommenders
+recommender = MovieRecommender()
+groq_enhancer = GroqMovieEnhancer()
+
+# ... (keep all existing routes)
+
+@app.route('/ai-recommendations', methods=['GET', 'POST'])
+def ai_recommendations():
+    """Get AI-powered movie recommendations"""
+    
+    genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance', 
+              'Sci-Fi', 'Thriller', 'Adventure', 'Animation', 'Fantasy']
+    
+    moods = ['Uplifting', 'Intense', 'Relaxing', 'Thrilling', 
+             'Emotional', 'Fun', 'Mysterious', 'Inspiring']
+    
+    if request.method == 'POST':
+        selected_genre = request.form.get('genre')
+        selected_mood = request.form.get('mood')
+        num_movies = int(request.form.get('num_movies', 5))
+        
+        ai_response = groq_enhancer.get_ai_recommendations(
+            genre=selected_genre if selected_genre != 'Any' else None,
+            mood=selected_mood if selected_mood != 'Any' else None,
+            num_movies=num_movies
+        )
+        
+        return render_template('ai_recommendations.html',
+                             genres=genres,
+                             moods=moods,
+                             ai_response=ai_response,
+                             selected_genre=selected_genre,
+                             selected_mood=selected_mood)
+    
+    return render_template('ai_recommendations.html',
+                         genres=genres,
+                         moods=moods,
+                         ai_response=None)
+
+@app.route('/movie-chat', methods=['GET', 'POST'])
+def movie_chat():
+    """Interactive movie chat powered by Groq"""
+    
+    if request.method == 'POST':
+        user_message = request.form.get('message')
+        
+        # Get AI response
+        ai_response = groq_enhancer.chat_about_movies(user_message)
+        
+        return render_template('movie_chat.html',
+                             user_message=user_message,
+                             ai_response=ai_response)
+    
+    return render_template('movie_chat.html',
+                         user_message=None,
+                         ai_response=None)
+
+@app.route('/enhanced-details/<movie_title>')
+def enhanced_details(movie_title):
+    """Show enhanced movie details with AI insights"""
+    
+    # Get movie from dataset
+    movie_data = recommender.movies_df[
+        recommender.movies_df['title_x'] == movie_title
+    ]
+    
+    if len(movie_data) == 0:
+        return "Movie not found", 404
+    
+    movie = movie_data.iloc[0]
+    
+    # Get AI-enhanced description
+    enhanced_desc = groq_enhancer.enhance_movie_description(
+        movie_title,
+        movie['overview']
+    )
+    
+    return render_template('enhanced_details.html',
+                         movie=movie.to_dict(),
+                         enhanced_description=enhanced_desc)

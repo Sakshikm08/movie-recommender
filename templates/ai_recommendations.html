@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Movie Recommendations - Powered by Groq</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="navbar-brand">
+                🎬 Movie Recommender
+            </a>
+            <ul class="navbar-nav">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/search" class="nav-link">Search</a></li>
+                <li><a href="/recommendations" class="nav-link">Recommendations</a></li>
+                <li><a href="/ai-recommendations" class="nav-link">AI Picks</a></li>
+                <li><a href="/movie-chat" class="nav-link">Chat</a></li>
+                <li><a href="/top-rated" class="nav-link">Top Rated</a></li>
+                <li><a href="/genre" class="nav-link">Genres</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1>🤖 AI-Powered Movie Recommendations</h1>
+            <p>Discover movies tailored to your mood and preferences using Groq AI</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- AI Recommendation Form -->
+            <div class="form-section">
+                <h2>Tell us what you're looking for</h2>
+                <form method="POST" action="/ai-recommendations">
+                    <div class="form-group">
+                        <label for="genre">Genre:</label>
+                        <select id="genre" name="genre" class="form-control">
+                            <option value="Any">Any Genre</option>
+                            {% for g in genres %}
+                            <option value="{{ g }}" {% if selected_genre == g %}selected{% endif %}>
+                                {{ g }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="mood">Mood:</label>
+                        <select id="mood" name="mood" class="form-control">
+                            <option value="Any">Any Mood</option>
+                            {% for m in moods %}
+                            <option value="{{ m }}" {% if selected_mood == m %}selected{% endif %}>
+                                {{ m }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="num_movies">Number of recommendations:</label>
+                        <input type="number" 
+                               id="num_movies" 
+                               name="num_movies" 
+                               class="form-control" 
+                               min="3" 
+                               max="10" 
+                               value="5">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-gradient">✨ Get AI Recommendations</button>
+                </form>
+            </div>
+
+            <!-- AI Response -->
+            {% if ai_response %}
+                <div class="ai-response-section">
+                    <h2 class="section-title">🎯 Your Personalized Picks</h2>
+                    <div class="ai-response-card">
+                        <pre style="white-space: pre-wrap; font-family: inherit;">{{ ai_response }}</pre>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>Powered by Groq AI | Built with ❤️ using Flask and Python</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

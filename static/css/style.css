@@ -483,3 +483,201 @@ select.form-control {
 * {
     transition: background-color 0.2s ease, border-color 0.2s ease;
 }
+
+/* AI Response Section */
+.ai-response-section {
+    margin-top: 2rem;
+}
+
+.ai-response-card {
+    background-color: var(--background-white);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid var(--accent-lavender);
+    margin-top: 1rem;
+}
+
+.ai-response-card pre {
+    color: var(--text-dark);
+    line-height: 1.8;
+    font-size: 0.95rem;
+}
+
+/* Chat Container */
+.chat-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.chat-messages {
+    background-color: var(--background-white);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.message {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: var(--border-radius-sm);
+}
+
+.user-message {
+    background-color: var(--accent-soft);
+    border-left: 3px solid var(--accent-lavender);
+}
+
+.ai-message {
+    background-color: var(--background-soft);
+    border-left: 3px solid var(--accent-sky);
+}
+
+.message strong {
+    color: var(--text-dark);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.message p {
+    color: var(--text-medium);
+    line-height: 1.7;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.suggestions {
+    background-color: var(--background-white);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    margin-top: 1.5rem;
+}
+
+.suggestions h3 {
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.suggestions ul {
+    list-style: none;
+    padding: 0;
+}
+
+.suggestions li {
+    color: var(--text-light);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-soft);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.suggestions li:hover {
+    color: var(--accent-color);
+    padding-left: 0.5rem;
+}
+
+.suggestions li:last-child {
+    border-bottom: none;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+/* Movie Detail Card */
+.movie-detail-card {
+    background-color: var(--background-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+}
+
+.movie-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--accent-light);
+}
+
+.movie-header h2 {
+    color: var(--text-dark);
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.movie-info-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background-color: var(--background-soft);
+    border-radius: var(--border-radius-sm);
+    border-left: 3px solid var(--accent-sky);
+}
+
+.movie-info-section h3 {
+    color: var(--text-dark);
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.movie-info-section p {
+    color: var(--text-medium);
+    line-height: 1.8;
+    margin-bottom: 0.75rem;
+}
+
+.movie-tagline {
+    font-style: italic;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    text-align: center;
+    padding: 1rem;
+}
+
+.ai-enhanced-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--accent-soft) 0%, var(--background-white) 100%);
+    border-radius: var(--border-radius);
+    border: 2px solid var(--accent-lavender);
+}
+
+.ai-enhanced-section h3 {
+    color: var(--text-dark);
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.action-buttons .btn {
+    flex: 1;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .movie-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+}

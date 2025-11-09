@@ -5,6 +5,9 @@ from sklearn.metrics.pairwise import cosine_similarity, linear_kernel
 from sklearn.preprocessing import MinMaxScaler
 import pickle
 import ast
+import os
+from groq import Groq
+from dotenv import load_dotenv
 
 class MovieRecommender:
     def __init__(self):
@@ -173,3 +176,149 @@ class MovieRecommender:
             self.cosine_sim = data['cosine_sim']
             self.indices = data['indices']
             self.movies_df = data['movies_df']
+
+
+
+
+# Load environment variables
+load_dotenv()
+
+class GroqMovieEnhancer:
+    def __init__(self):
+        """Initialize Groq client"""
+        api_key = os.getenv('GROQ_API_KEY')
+        if not api_key:
+            raise ValueError("GROQ_API_KEY not found in environment variables")
+        
+        self.client = Groq(api_key=api_key)
+        self.model = "llama-3.1-70b-versatile"  # Fast and accurate
+    
+    def get_ai_recommendations(self, genre=None, mood=None, num_movies=5):
+        """Get AI-powered movie recommendations from Groq"""
+        
+        prompt = f"""You are a movie expert. Recommend {num_movies} movies"""
+        
+        if genre:
+            prompt += f" in the {genre} genre"
+        if mood:
+            prompt += f" that match a {mood} mood"
+        
+        prompt += """.
+        
+For each movie, provide:
+1. Title
+2. Year
+3. Brief description (2-3 sentences)
+4. Why it's recommended
+5. Rating out of 10
+
+Format as JSON array with keys: title, year, description, reason, rating"""
+        
+        try:
+            chat_completion = self.client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert movie critic and recommendation system. Provide diverse, high-quality movie suggestions."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                model=self.model,
+                temperature=0.7,
+                max_tokens=2000
+            )
+            
+            return chat_completion.choices[0].message.content
+        
+        except Exception as e:
+            return f"Error getting AI recommendations: {str(e)}"
+    
+    def enhance_movie_description(self, movie_title, original_overview):
+        """Enhance movie description with AI-generated insights"""
+        
+        prompt = f"""Given this movie: "{movie_title}"
+Original description: {original_overview}
+
+Provide:
+1. A more engaging 2-sentence description
+2. Three key themes/elements
+3. One similar movie recommendation
+
+Keep it concise and engaging."""
+        
+        try:
+            chat_completion = self.client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                model=self.model,
+                temperature=0.6,
+                max_tokens=300
+            )
+            
+            return chat_completion.choices[0].message.content
+        
+        except Exception as e:
+            return original_overview
+    
+    def explain_recommendation(self, source_movie, recommended_movie, similarity_score):
+        """Explain why a movie was recommended"""
+        
+        prompt = f"""Explain in 2-3 sentences why someone who liked "{source_movie}" would enjoy "{recommended_movie}". 
+The similarity score is {similarity_score:.2%}. Focus on themes, style, or emotional resonance."""
+        
+        try:
+            chat_completion = self.client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                model=self.model,
+                temperature=0.5,
+                max_tokens=150
+            )
+            
+            return chat_completion.choices[0].message.content
+        
+        except Exception as e:
+            return "Similar themes and style."
+    
+    def chat_about_movies(self, user_message, conversation_history=None):
+        """Interactive chat about movies"""
+        
+        messages = [
+            {
+                "role": "system",
+                "content": "You are a friendly movie expert. Help users discover movies they'll love based on their preferences. Be conversational and enthusiastic."
+            }
+        ]
+        
+        # Add conversation history if available
+        if conversation_history:
+            messages.extend(conversation_history)
+        
+        messages.append({
+            "role": "user",
+            "content": user_message
+        })
+        
+        try:
+            chat_completion = self.client.chat.completions.create(
+                messages=messages,
+                model=self.model,
+                temperature=0.7,
+                max_tokens=500
+            )
+            
+            return chat_completion.choices[0].message.content
+        
+        except Exception as e:
+            return f"Sorry, I encountered an error: {str(e)}"
