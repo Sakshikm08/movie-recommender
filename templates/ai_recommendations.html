@@ -21,6 +21,7 @@
                 <li><a href="/movie-chat" class="nav-link">Chat</a></li>
                 <li><a href="/top-rated" class="nav-link">Top Rated</a></li>
                 <li><a href="/genre" class="nav-link">Genres</a></li>
+                <li><a href="/statistics" class="nav-link">Statistics</a></li>
             </ul>
         </div>
     </nav>
@@ -79,13 +80,41 @@
                 </form>
             </div>
 
-            <!-- AI Response -->
-            {% if ai_response %}
-                <div class="ai-response-section">
-                    <h2 class="section-title">🎯 Your Personalized Picks</h2>
-                    <div class="ai-response-card">
-                        <pre style="white-space: pre-wrap; font-family: inherit;">{{ ai_response }}</pre>
+            <!-- AI Response - Beautiful Movie Cards -->
+            {% if movies_data %}
+                <div class="alert alert-success">
+                    ✨ Here are your AI-powered movie recommendations!
+                </div>
+                
+                <h2 class="section-title">🎯 Your Personalized Picks</h2>
+                
+                <div class="movie-grid">
+                    {% for movie in movies_data %}
+                    <div class="movie-card">
+                        <h3>{{ loop.index }}. {{ movie.title }}</h3>
+                        
+                        <div style="margin-bottom: 0.75rem;">
+                            <span class="movie-rating">⭐ {{ movie.rating }}/10</span>
+                            <span class="similarity-badge">📅 {{ movie.year }}</span>
+                        </div>
+                        
+                        <p class="movie-overview">{{ movie.description }}</p>
+                        
+                        <div class="ai-reason-box">
+                            <strong>💡 Why recommended:</strong>
+                            <p>{{ movie.reason }}</p>
+                        </div>
                     </div>
+                    {% endfor %}
+                </div>
+                
+            {% elif ai_response %}
+                <!-- Fallback if JSON parsing fails -->
+                <div class="alert alert-warning">
+                    ⚠️ Response received but couldn't parse as structured data. Showing raw output:
+                </div>
+                <div class="ai-response-card">
+                    <pre style="white-space: pre-wrap; font-family: inherit; line-height: 1.8;">{{ ai_response }}</pre>
                 </div>
             {% endif %}
         </div>

@@ -172,17 +172,38 @@ def ai_recommendations():
             num_movies=num_movies
         )
         
+        # Parse JSON from markdown code blocks
+        import re
+        movies_data = None
+        
+        try:
+            # Extract JSON from markdown code blocks
+            json_match = re.search(r'``````', ai_response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(1)
+                movies_data = json.loads(json_str)
+            else:
+                # Try parsing the entire response as JSON
+                movies_data = json.loads(ai_response)
+        except (json.JSONDecodeError, AttributeError) as e:
+            print(f"JSON parsing error: {e}")
+            movies_data = None
+        
         return render_template('ai_recommendations.html',
                              genres=genres,
                              moods=moods,
-                             ai_response=ai_response,
+                             movies_data=movies_data,
+                             ai_response=ai_response if not movies_data else None,
                              selected_genre=selected_genre,
                              selected_mood=selected_mood)
     
     return render_template('ai_recommendations.html',
                          genres=genres,
                          moods=moods,
+                         movies_data=None,
                          ai_response=None)
+
+
 
 @app.route('/movie-chat', methods=['GET', 'POST'])
 def movie_chat():
@@ -264,3 +285,8 @@ def page_not_found(e):
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5000)
+@app.route('/browse-enhanced')
+def browse_enhanced():
+    """Browse movies to see enhanced details"""
+    movie_titles = sorted(recommender.movies_df['title_x'].unique())
+    return render_template('browse_enhanced.html', movie_titles=movie_titles)

@@ -484,25 +484,53 @@ select.form-control {
     transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-/* AI Response Section */
-.ai-response-section {
-    margin-top: 2rem;
-}
-
-.ai-response-card {
-    background-color: var(--background-white);
-    padding: 2rem;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
-    border-left: 4px solid var(--accent-lavender);
+/* AI Reason Section */
+.ai-reason {
+    background-color: var(--accent-soft);
+    padding: 1rem;
+    border-radius: var(--border-radius-sm);
     margin-top: 1rem;
+    border-left: 3px solid var(--accent-lavender);
 }
 
-.ai-response-card pre {
+.ai-reason strong {
     color: var(--text-dark);
-    line-height: 1.8;
-    font-size: 0.95rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
 }
+
+.ai-reason p {
+    color: var(--text-medium);
+    margin: 0;
+    line-height: 1.6;
+    font-size: 0.9rem;
+}
+
+/* AI Reason Box - Similar to other movie cards */
+.ai-reason-box {
+    background: linear-gradient(135deg, var(--accent-soft) 0%, var(--background-white) 100%);
+    padding: 1rem;
+    border-radius: var(--border-radius-sm);
+    margin-top: 1rem;
+    border-left: 3px solid var(--accent-lavender);
+}
+
+.ai-reason-box strong {
+    color: var(--text-dark);
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.ai-reason-box p {
+    color: var(--text-medium);
+    margin: 0;
+    line-height: 1.7;
+    font-size: 0.9rem;
+}
+
 
 /* Chat Container */
 .chat-container {
