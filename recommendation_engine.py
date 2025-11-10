@@ -9,6 +9,10 @@ import os
 from groq import Groq
 from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
+
+
 class MovieRecommender:
     def __init__(self):
         self.movies_df = None
@@ -178,11 +182,6 @@ class MovieRecommender:
             self.movies_df = data['movies_df']
 
 
-
-
-# Load environment variables
-load_dotenv()
-
 class GroqMovieEnhancer:
     def __init__(self):
         """Initialize Groq client"""
@@ -191,7 +190,8 @@ class GroqMovieEnhancer:
             raise ValueError("GROQ_API_KEY not found in environment variables")
         
         self.client = Groq(api_key=api_key)
-        self.model = "llama-3.1-70b-versatile"  # Fast and accurate
+        self.model = "llama-3.3-70b-versatile"  # Updated model (Nov 2025)
+
     
     def get_ai_recommendations(self, genre=None, mood=None, num_movies=5):
         """Get AI-powered movie recommendations from Groq"""

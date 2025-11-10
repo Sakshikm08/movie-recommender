@@ -1,12 +1,12 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-from recommendation_engine import MovieRecommender
-import json
 from recommendation_engine import MovieRecommender, GroqMovieEnhancer
+import json
 
 app = Flask(__name__)
 
-# Initialize recommender
+# Initialize recommender systems (ONLY ONCE)
 recommender = MovieRecommender()
+groq_enhancer = None  # Initialize after checking if API key exists
 
 try:
     recommender.load_data(
@@ -18,6 +18,16 @@ try:
     print("✓ Data loaded successfully")
 except Exception as e:
     print(f"Error loading data: {e}")
+
+# Try to initialize Groq (optional - won't break app if no API key)
+try:
+    groq_enhancer = GroqMovieEnhancer()
+    print("✓ Groq AI initialized successfully")
+except Exception as e:
+    print(f"⚠ Groq AI not available: {e}")
+    print("AI features will be disabled. Add GROQ_API_KEY to .env to enable.")
+
+# ============= BASIC ROUTES =============
 
 @app.route('/')
 def index():
@@ -134,38 +144,16 @@ def statistics():
     
     return render_template('statistics.html', stats=stats)
 
-# API endpoints
-@app.route('/api/search/<query>')
-def api_search(query):
-    """API endpoint for search"""
-    results = recommender.search_movies(query)
-    return jsonify(results.to_dict('records'))
-
-@app.route('/api/recommend/<movie>')
-def api_recommend(movie):
-    """API endpoint for recommendations"""
-    num = request.args.get('num', 10, type=int)
-    recs = recommender.get_content_recommendations(movie, top_n=num)
-    
-    if recs is not None:
-        return jsonify(recs.to_dict('records'))
-    return jsonify({'error': 'Movie not found'}), 404
-
-if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
-
-
-
-
-# Initialize both recommenders
-recommender = MovieRecommender()
-groq_enhancer = GroqMovieEnhancer()
-
-# ... (keep all existing routes)
+# ============= AI-POWERED ROUTES (Optional) =============
 
 @app.route('/ai-recommendations', methods=['GET', 'POST'])
 def ai_recommendations():
     """Get AI-powered movie recommendations"""
+    
+    # Check if Groq is available
+    if groq_enhancer is None:
+        return render_template('error.html', 
+                             message="AI features are not available. Please add GROQ_API_KEY to .env file.")
     
     genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance', 
               'Sci-Fi', 'Thriller', 'Adventure', 'Animation', 'Fantasy']
@@ -200,6 +188,11 @@ def ai_recommendations():
 def movie_chat():
     """Interactive movie chat powered by Groq"""
     
+    # Check if Groq is available
+    if groq_enhancer is None:
+        return render_template('error.html', 
+                             message="AI Chat is not available. Please add GROQ_API_KEY to .env file.")
+    
     if request.method == 'POST':
         user_message = request.form.get('message')
         
@@ -217,6 +210,11 @@ def movie_chat():
 @app.route('/enhanced-details/<movie_title>')
 def enhanced_details(movie_title):
     """Show enhanced movie details with AI insights"""
+    
+    # Check if Groq is available
+    if groq_enhancer is None:
+        return render_template('error.html', 
+                             message="AI enhancement is not available. Please add GROQ_API_KEY to .env file.")
     
     # Get movie from dataset
     movie_data = recommender.movies_df[
@@ -237,3 +235,32 @@ def enhanced_details(movie_title):
     return render_template('enhanced_details.html',
                          movie=movie.to_dict(),
                          enhanced_description=enhanced_desc)
+
+# ============= API ENDPOINTS =============
+
+@app.route('/api/search/<query>')
+def api_search(query):
+    """API endpoint for search"""
+    results = recommender.search_movies(query)
+    return jsonify(results.to_dict('records'))
+
+@app.route('/api/recommend/<movie>')
+def api_recommend(movie):
+    """API endpoint for recommendations"""
+    num = request.args.get('num', 10, type=int)
+    recs = recommender.get_content_recommendations(movie, top_n=num)
+    
+    if recs is not None:
+        return jsonify(recs.to_dict('records'))
+    return jsonify({'error': 'Movie not found'}), 404
+
+# ============= ERROR HANDLER =============
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('error.html', message="Page not found"), 404
+
+# ============= RUN APP =============
+
+if __name__ == '__main__':
+    app.run(debug=True, host='127.0.0.1', port=5000)
