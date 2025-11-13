@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from recommendation_engine import MovieRecommender, GroqMovieEnhancer
 import json
+import re
+
 
 app = Flask(__name__)
 
@@ -150,60 +152,68 @@ def statistics():
 def ai_recommendations():
     """Get AI-powered movie recommendations"""
     
-    # Check if Groq is available
     if groq_enhancer is None:
-        return render_template('error.html', 
-                             message="AI features are not available. Please add GROQ_API_KEY to .env file.")
-    
-    genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance', 
+        return render_template(
+            'error.html',
+            message="AI features are not available. Please add GROQ_API_KEY to .env file."
+        )
+
+    genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance',
               'Sci-Fi', 'Thriller', 'Adventure', 'Animation', 'Fantasy']
-    
-    moods = ['Uplifting', 'Intense', 'Relaxing', 'Thrilling', 
+
+    moods = ['Uplifting', 'Intense', 'Relaxing', 'Thrilling',
              'Emotional', 'Fun', 'Mysterious', 'Inspiring']
-    
+
     if request.method == 'POST':
         selected_genre = request.form.get('genre')
         selected_mood = request.form.get('mood')
         num_movies = int(request.form.get('num_movies', 5))
-        
+
+        # 🧠 Get AI response (text with possible Markdown and JSON)
         ai_response = groq_enhancer.get_ai_recommendations(
             genre=selected_genre if selected_genre != 'Any' else None,
             mood=selected_mood if selected_mood != 'Any' else None,
             num_movies=num_movies
         )
-        
-        # Parse JSON from markdown code blocks
-        import re
+
         movies_data = None
-        
+
         try:
-            # Extract JSON from markdown code blocks
-            json_match = re.search(r'``````', ai_response, re.DOTALL)
+            # 🧹 1️⃣ Extract JSON from markdown code block: ```[ ... ]```
+            json_match = re.search(r'```(.*?)```', ai_response, re.DOTALL)
             if json_match:
-                json_str = json_match.group(1)
+                json_str = json_match.group(1).strip()
                 movies_data = json.loads(json_str)
             else:
-                # Try parsing the entire response as JSON
-                movies_data = json.loads(ai_response)
+                # 🧩 2️⃣ If no code block, try finding JSON array directly
+                json_match = re.search(r'\[.*\]', ai_response, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group(0)
+                    movies_data = json.loads(json_str)
+                else:
+                    # 🧩 3️⃣ As a last resort, try entire response
+                    movies_data = json.loads(ai_response)
         except (json.JSONDecodeError, AttributeError) as e:
-            print(f"JSON parsing error: {e}")
+            print(f"⚠️ JSON parsing error: {e}")
             movies_data = None
-        
-        return render_template('ai_recommendations.html',
-                             genres=genres,
-                             moods=moods,
-                             movies_data=movies_data,
-                             ai_response=ai_response if not movies_data else None,
-                             selected_genre=selected_genre,
-                             selected_mood=selected_mood)
-    
-    return render_template('ai_recommendations.html',
-                         genres=genres,
-                         moods=moods,
-                         movies_data=None,
-                         ai_response=None)
 
+        return render_template(
+            'ai_recommendations.html',
+            genres=genres,
+            moods=moods,
+            movies_data=movies_data,
+            ai_response=ai_response if not movies_data else None,
+            selected_genre=selected_genre,
+            selected_mood=selected_mood
+        )
 
+    return render_template(
+        'ai_recommendations.html',
+        genres=genres,
+        moods=moods,
+        movies_data=None,
+        ai_response=None
+    )
 
 @app.route('/movie-chat', methods=['GET', 'POST'])
 def movie_chat():
