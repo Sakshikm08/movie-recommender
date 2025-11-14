@@ -1,14 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Movie Recommendations - Powered by Groq</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    
+{% extends 'base.html' %}
 
+{% block title %}AI Movie Recommendations - Powered by Groq{% endblock %}
+
+{% block content %}
     <!-- Header -->
     <header class="header">
         <div class="container">
@@ -63,7 +57,7 @@
                 </form>
             </div>
 
-            <!-- AI Response - Beautiful Movie Cards -->
+            <!-- AI Response - Movie Cards -->
             {% if movies_data %}
                 <div class="alert alert-success">
                     ✨ Here are your AI-powered movie recommendations!
@@ -102,14 +96,4 @@
             {% endif %}
         </div>
     </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>Powered by Groq AI | Built with ❤️ using Flask and Python</p>
-        </div>
-    </footer>
-
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
-</html>
+{% endblock %}

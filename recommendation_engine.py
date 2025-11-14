@@ -322,3 +322,109 @@ The similarity score is {similarity_score:.2%}. Focus on themes, style, or emoti
         
         except Exception as e:
             return f"Sorry, I encountered an error: {str(e)}"
+        
+class TMDBHelper:
+    def __init__(self):
+        """Initialize TMDB API client"""
+        api_key = os.getenv('TMDB_API_KEY')
+        if not api_key:
+            raise ValueError("TMDB_API_KEY not found in environment variables")
+        
+        self.api_key = api_key
+        self.base_url = "https://api.themoviedb.org/3"
+        self.image_base_url = "https://image.tmdb.org/t/p"
+        
+    def get_poster_url(self, poster_path, size="w500"):
+        """Get full poster URL from poster path"""
+        if not poster_path:
+            return "/static/images/no-poster.jpg"  # Fallback image
+        return f"{self.image_base_url}/{size}{poster_path}"
+    
+    def search_movie(self, title):
+        """Search for a movie and get details including poster"""
+        import requests
+        
+        url = f"{self.base_url}/search/movie"
+        params = {
+            'api_key': self.api_key,
+            'query': title,
+            'language': 'en-US'
+        }
+        
+        try:
+            response = requests.get(url, params=params)
+            data = response.json()
+            
+            if data['results']:
+                movie = data['results'][0]  # Get first result
+                return {
+                    'title': movie.get('title'),
+                    'poster_path': movie.get('poster_path'),
+                    'poster_url': self.get_poster_url(movie.get('poster_path')),
+                    'overview': movie.get('overview'),
+                    'release_date': movie.get('release_date'),
+                    'vote_average': movie.get('vote_average'),
+                    'vote_count': movie.get('vote_count'),
+                    'backdrop_path': movie.get('backdrop_path')
+                }
+            return None
+        except Exception as e:
+            print(f"Error fetching movie from TMDB: {e}")
+            return None
+    
+    def get_popular_movies(self, page=1):
+        """Get popular movies with posters"""
+        import requests
+        
+        url = f"{self.base_url}/movie/popular"
+        params = {
+            'api_key': self.api_key,
+            'language': 'en-US',
+            'page': page
+        }
+        
+        try:
+            response = requests.get(url, params=params)
+            data = response.json()
+            
+            movies = []
+            for movie in data['results']:
+                movies.append({
+                    'title': movie.get('title'),
+                    'poster_url': self.get_poster_url(movie.get('poster_path')),
+                    'overview': movie.get('overview'),
+                    'release_date': movie.get('release_date'),
+                    'vote_average': movie.get('vote_average'),
+                    'vote_count': movie.get('vote_count')
+                })
+            
+            return movies
+        except Exception as e:
+            print(f"Error fetching popular movies: {e}")
+            return []
+    
+    def get_trending_movies(self):
+        """Get trending movies this week"""
+        import requests
+        
+        url = f"{self.base_url}/trending/movie/week"
+        params = {'api_key': self.api_key}
+        
+        try:
+            response = requests.get(url, params=params)
+            data = response.json()
+            
+            movies = []
+            for movie in data['results'][:10]:  # Top 10
+                movies.append({
+                    'title': movie.get('title'),
+                    'poster_url': self.get_poster_url(movie.get('poster_path')),
+                    'overview': movie.get('overview'),
+                    'release_date': movie.get('release_date'),
+                    'vote_average': movie.get('vote_average')
+                })
+            
+            return movies
+        except Exception as e:
+            print(f"Error fetching trending movies: {e}")
+            return []

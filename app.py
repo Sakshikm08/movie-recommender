@@ -1,3 +1,4 @@
+from pydoc import text
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from recommendation_engine import MovieRecommender, GroqMovieEnhancer
 import json
@@ -29,23 +30,66 @@ except Exception as e:
     print(f"⚠ Groq AI not available: {e}")
     print("AI features will be disabled. Add GROQ_API_KEY to .env to enable.")
 
+from recommendation_engine import MovieRecommender, GroqMovieEnhancer, TMDBHelper
+
+# Initialize all helpers
+
+tmdb_helper = None
+
+# ... existing recommender initialization ...
+
+# Initialize TMDB
+try:
+    tmdb_helper = TMDBHelper()
+    print("✓ TMDB API initialized successfully")
+except Exception as e:
+    print(f"⚠ TMDB API not available: {e}")
+
+
 # ============= BASIC ROUTES =============
 
 @app.route('/')
 def index():
     """Home page with featured movies"""
-    top_movies = recommender.build_popularity_model().head(6)
+    if recommender is None:
+        return render_template('error.html',
+        message="Movie database not loaded.")
+    try:
+    # Get top rated movies
+        top_movies_df = recommender.build_popularity_model().head(6)
+        movies_list = []
     
-    stats = {
-        'total_movies': len(recommender.movies_df),
-        'avg_rating': round(recommender.movies_df['vote_average'].mean(), 1),
-        'total_genres': len(set([g for genres in recommender.movies_df['genres'] 
-                                  for g in genres.split() if g]))
-    }
+    # Enhance each movie with TMDB poster
+        for _, movie in top_movies_df.iterrows():
+            movie_dict = movie.to_dict()
+        
+        # Try to get poster from TMDB
+            if tmdb_helper:
+                tmdb_data = tmdb_helper.search_movie(movie['title_x'])
+                if tmdb_data:
+                    movie_dict['poster_url'] = tmdb_data['poster_url']
+                else:
+                    movie_dict['poster_url'] = None
+            else:
+                movie_dict['poster_url'] = None
+        
+            movies_list.append(movie_dict)
     
-    return render_template('index.html', 
-                          movies=top_movies.to_dict('records'),
-                          stats=stats)
+    # Get statistics
+        stats = {
+            'total_movies': len(recommender.movies_df),
+            'avg_rating': round(recommender.movies_df['vote_average'].mean(), 1),
+            'total_genres': len(recommender.movies_df['genres'].unique())
+        }
+    
+        return render_template('index.html', 
+                         movies=movies_list,
+                         stats=stats)
+    except Exception as e:
+        return render_template('error.html', 
+                         message=f"Error: {str(e)}")
+
+
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
@@ -54,10 +98,28 @@ def search():
         query = request.form.get('query', '')
         if query:
             results = recommender.search_movies(query)
+            
+            # Enhance with TMDB posters
+            if tmdb_helper:
+                enhanced_results = []
+                for _, movie in results.iterrows():
+                    movie_dict = movie.to_dict()
+                    tmdb_data = tmdb_helper.search_movie(movie['title_x'])
+                    if tmdb_data:
+                        movie_dict['poster_url'] = tmdb_data['poster_url']
+                    else:
+                        movie_dict['poster_url'] = None
+                    enhanced_results.append(movie_dict)
+                
+                return render_template('search.html', 
+                                      results=enhanced_results,
+                                      query=query)
+            
             return render_template('search.html', 
                                   results=results.to_dict('records'),
                                   query=query)
     return render_template('search.html', results=[], query='')
+
 
 @app.route('/recommendations', methods=['GET', 'POST'])
 def recommendations():
@@ -71,9 +133,27 @@ def recommendations():
         recs = recommender.get_content_recommendations(selected_movie, top_n=num_recs)
         
         if recs is not None:
+            # Enhance with TMDB posters
+            enhanced_recs = []
+            
+            for _, movie in recs.iterrows():
+                movie_dict = movie.to_dict()
+                
+                # Fetch poster from TMDB
+                if tmdb_helper:
+                    tmdb_data = tmdb_helper.search_movie(movie['title_x'])
+                    if tmdb_data:
+                        movie_dict['poster_url'] = tmdb_data['poster_url']
+                    else:
+                        movie_dict['poster_url'] = None
+                else:
+                    movie_dict['poster_url'] = None
+                
+                enhanced_recs.append(movie_dict)
+            
             return render_template('recommendations.html',
                                   movie_titles=movie_titles,
-                                  recommendations=recs.to_dict('records'),
+                                  recommendations=enhanced_recs,
                                   selected_movie=selected_movie)
     
     return render_template('recommendations.html', 
@@ -81,14 +161,32 @@ def recommendations():
                           recommendations=None,
                           selected_movie=None)
 
+
 @app.route('/top-rated')
 def top_rated():
     """Show top rated movies"""
     num_movies = request.args.get('num', 20, type=int)
-    top_movies = recommender.build_popularity_model().head(num_movies)
+    top_movies_df = recommender.build_popularity_model().head(num_movies)
     
-    return render_template('top_rated.html', 
-                          movies=top_movies.to_dict('records'))
+    # Enhance with TMDB posters
+    movies_list = []
+    for _, movie in top_movies_df.iterrows():
+        movie_dict = movie.to_dict()
+        
+        # Fetch poster from TMDB
+        if tmdb_helper:
+            tmdb_data = tmdb_helper.search_movie(movie['title_x'])
+            if tmdb_data:
+                movie_dict['poster_url'] = tmdb_data['poster_url']
+            else:
+                movie_dict['poster_url'] = None
+        else:
+            movie_dict['poster_url'] = None
+        
+        movies_list.append(movie_dict)
+    
+    return render_template('top_rated.html', movies=movies_list)
+
 
 @app.route('/genre', methods=['GET', 'POST'])
 def genre():
@@ -291,12 +389,41 @@ def api_recommend(movie):
 def page_not_found(e):
     return render_template('error.html', message="Page not found"), 404
 
-# ============= RUN APP =============
 
-if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
 @app.route('/browse-enhanced')
 def browse_enhanced():
     """Browse movies to see enhanced details"""
     movie_titles = sorted(recommender.movies_df['title_x'].unique())
     return render_template('browse_enhanced.html', movie_titles=movie_titles)
+
+@app.route('/trending')
+def trending():
+    """Show trending movies from TMDB"""
+    if tmdb_helper is None:
+        return render_template('error.html', 
+                             message="TMDB API not available. Please add TMDB_API_KEY to .env file.")
+    
+    trending_movies = tmdb_helper.get_trending_movies()
+    
+    return render_template('trending.html', 
+                          movies=trending_movies)
+
+@app.route('/discover')
+def discover():
+    """Discover new movies from TMDB (not in CSV)"""
+    if tmdb_helper is None:
+         return render_template('error.html',
+        message="TMDB API not available.")
+
+
+    popular_movies = tmdb_helper.get_popular_movies(page=1)
+
+    return render_template('discover.html', 
+                      movies=popular_movies,
+                      page_title="Discover New Movies")
+
+# ============= RUN APP =============
+
+if __name__ == '__main__':
+    app.run(debug=True, host='127.0.0.1', port=5000)
+

@@ -21,11 +21,19 @@
     <main class="main-content">
         <div class="container">
             <!-- Movie Details Card -->
-            <div class="movie-detail-card">
-                <div class="movie-header">
-                    <h2>{{ movie.title_x }}</h2>
-                    <span class="movie-rating">⭐ {{ movie.vote_average }}/10</span>
-                </div>
+            <div class="movie-card">
+    {% if movie.poster_url %}
+    <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="movie-poster">
+    {% else %}
+    <div class="no-poster">🎬</div>
+    {% endif %}
+    
+    <h3>{{ movie.title }}</h3>
+    <span class="movie-rating">⭐ {{ movie.vote_average }}/10</span>
+    <p class="movie-overview">{{ movie.overview[:150] }}...</p>
+    <p class="movie-meta">📅 {{ movie.release_date }}</p>
+</div>
+
                 
                 <!-- Basic Info -->
                 <div class="movie-info-section">

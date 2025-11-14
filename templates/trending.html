@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Trending Movies - Movie Recommender{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<header class="header">
+<div class="container">
+<h1>🔥 Trending Movies This Week</h1>
+<p>Discover what everyone is watching right now - powered by TMDB</p>
+</div>
+</header>
+<!-- Main Content -->
+<main class="main-content">
+    <div class="container">
+        {% if movies %}
+            <h2 class="section-title">🎬 Popular Right Now</h2>
+            
+            <div class="movie-grid">
+                {% for movie in movies %}
+                <div class="movie-card">
+                    {% if movie.poster_url %}
+                    <img src="{{ movie.poster_url }}" 
+                         alt="{{ movie.title }}" 
+                         class="movie-poster"
+                         loading="lazy">
+                    {% else %}
+                    <div class="no-poster">🎬</div>
+                    {% endif %}
+                    
+                    <h3>{{ movie.title }}</h3>
+                    
+                    <div style="margin-bottom: 0.75rem;">
+                        <span class="movie-rating">⭐ {{ movie.vote_average }}/10</span>
+                        <span class="similarity-badge">📅 {{ movie.release_date[:4] if movie.release_date else 'N/A' }}</span>
+                    </div>
+                    
+                    <p class="movie-overview">
+                        {{ movie.overview[:150] if movie.overview else 'No description available.' }}
+                        {% if movie.overview and movie.overview|length > 150%}...{% endif %}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                ⚠️ Unable to load trending movies. Please check your TMDB API key.
+            </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

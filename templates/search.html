@@ -46,13 +46,19 @@
                     
                     <div class="movie-grid">
                         {% for movie in results %}
-                        <div class="movie-card">
-                            <h3>{{ movie.title_x }}</h3>
-                            <span class="movie-rating">⭐ {{ movie.vote_average }}/10</span>
-                            <p class="movie-genres">🎭 {{ movie.genres }}</p>
-                            <p class="movie-overview">{{ movie.overview }}</p>
-                            <p class="movie-meta">📅 {{ movie.release_date }}</p>
-                        </div>
+                       <div class="movie-card">
+    {% if movie.poster_url %}
+    <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="movie-poster">
+    {% else %}
+    <div class="no-poster">🎬</div>
+    {% endif %}
+    
+    <h3>{{ movie.title }}</h3>
+    <span class="movie-rating">⭐ {{ movie.vote_average }}/10</span>
+    <p class="movie-overview">{{ movie.overview[:150] }}...</p>
+    <p class="movie-meta">📅 {{ movie.release_date }}</p>
+</div>
+
                         {% endfor %}
                     </div>
                 {% else %}
