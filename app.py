@@ -204,21 +204,40 @@ def genre():
         selected_genre = request.form.get('genre')
         num_movies = int(request.form.get('num_movies', 10))
         
-        genre_movies = recommender.get_recommendations_by_genre(
+        genre_movies_df = recommender.get_recommendations_by_genre(
             selected_genre, 
             top_n=num_movies
         )
         
-        if genre_movies is not None:
+        if genre_movies_df is not None:
+            # Enhance with TMDB posters
+            enhanced_movies = []
+            
+            for _, movie in genre_movies_df.iterrows():
+                movie_dict = movie.to_dict()
+                
+                # Fetch poster from TMDB
+                if tmdb_helper:
+                    tmdb_data = tmdb_helper.search_movie(movie['title_x'])
+                    if tmdb_data:
+                        movie_dict['poster_url'] = tmdb_data['poster_url']
+                    else:
+                        movie_dict['poster_url'] = None
+                else:
+                    movie_dict['poster_url'] = None
+                
+                enhanced_movies.append(movie_dict)
+            
             return render_template('genre.html',
                                   genres=genre_list,
-                                  movies=genre_movies.to_dict('records'),
+                                  movies=enhanced_movies,
                                   selected_genre=selected_genre)
     
     return render_template('genre.html', 
                           genres=genre_list,
                           movies=None,
                           selected_genre=None)
+
 
 @app.route('/statistics')
 def statistics():

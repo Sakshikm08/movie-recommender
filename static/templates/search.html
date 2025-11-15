@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Movies - Movie Recommender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1>🔍 Search Movies</h1>
+            <p>Find your favorite movies in our database</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Search Form -->
+            <div class="form-section">
+                <form method="POST" action="/search">
+                    <div class="form-group">
+                        <label for="query">Enter Movie Title:</label>
+                        <input type="text" 
+                               id="query" 
+                               name="query" 
+                               class="form-control" 
+                               placeholder="e.g., Avatar, Inception, The Matrix"
+                               value="{{ query if query else '' }}"
+                               required>
+                    </div>
+                    <button type="submit" class="btn btn-gradient">Search</button>
+                </form>
+            </div>
+
+            <!-- Search Results -->
+            {% if query %}
+                {% if results %}
+                    <div class="alert alert-success">
+                        Found {{ results|length }} movies matching "{{ query }}"
+                    </div>
+                    
+                    <div class="movie-grid">
+                        {% for movie in results %}
+                       <div class="movie-card">
+    {% if movie.poster_url %}
+    <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="movie-poster">
+    {% else %}
+    <div class="no-poster">🎬</div>
+    {% endif %}
+    
+    <h3>{{ movie.title }}</h3>
+    <span class="movie-rating">⭐ {{ movie.vote_average }}/10</span>
+    <p class="movie-overview">{{ movie.overview[:150] }}...</p>
+    <p class="movie-meta">📅 {{ movie.release_date }}</p>
+</div>
+
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-results">
+                        <div class="no-results-icon">🎬</div>
+                        <h2>No movies found</h2>
+                        <p>Try a different search term</p>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>Built with ❤️ using Flask, Python, and TMDB Dataset</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
