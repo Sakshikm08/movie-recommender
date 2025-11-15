@@ -1,14 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Chat - AI Assistant</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    
+{% extends 'base.html' %}
 
+{% block title %}Movie Chat - AI Assistant{% endblock %}
+
+{% block content %}
     <!-- Header -->
     <header class="header">
         <div class="container">
@@ -25,22 +19,31 @@
                 {% if user_message and ai_response %}
                 <div class="chat-messages">
                     <div class="message user-message">
-                        <strong>You:</strong>
-                        <p>{{ user_message }}</p>
+                        <div class="message-header">
+                            <strong>👤 You</strong>
+                        </div>
+                        <div class="message-content">
+                            {{ user_message }}
+                        </div>
                     </div>
                     
                     <div class="message ai-message">
-                        <strong>🤖 AI Assistant:</strong>
-                        <p>{{ ai_response }}</p>
+                        <div class="message-header">
+                            <strong>🤖 AI Assistant</strong>
+                        </div>
+                        <div class="message-content">
+                            {{ ai_response|safe }}
+                        </div>
                     </div>
                 </div>
                 {% endif %}
                 
                 <!-- Chat Input Form -->
                 <div class="form-section">
+                    <h2>Ask Your Question</h2>
                     <form method="POST" action="/movie-chat">
                         <div class="form-group">
-                            <label for="message">Ask me anything about movies:</label>
+                            <label for="message">What would you like to know about movies?</label>
                             <textarea id="message" 
                                     name="message" 
                                     class="form-control" 
@@ -49,31 +52,23 @@
                                     required></textarea>
                         </div>
                         
-                        <button type="submit" class="btn btn-gradient">Send Message</button>
+                        <button type="submit" class="btn btn-gradient">💬 Send Message</button>
                     </form>
                 </div>
                 
                 <!-- Suggested Questions -->
                 <div class="suggestions">
-                    <h3>Try asking:</h3>
+                    <h3>💡 Try asking:</h3>
                     <ul>
                         <li>"Recommend movies like The Dark Knight"</li>
                         <li>"What are the best romantic comedies from the 2000s?"</li>
                         <li>"I want something uplifting and inspiring"</li>
                         <li>"Suggest hidden gem movies I might not have heard of"</li>
+                        <li>"What makes Inception so popular?"</li>
+                        <li>"Tell me about Christopher Nolan's directing style"</li>
                     </ul>
                 </div>
             </div>
         </div>
     </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>Powered by Groq AI | Built with ❤️ using Flask and Python</p>
-        </div>
-    </footer>
-
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
-</html>
+{% endblock %}

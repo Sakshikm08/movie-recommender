@@ -1,14 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Movies - Movie Recommender</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    
+{% extends 'base.html' %}
 
+{% block title %}Search Movies{% endblock %}
+
+{% block content %}
     <!-- Header -->
     <header class="header">
         <div class="container">
@@ -44,21 +38,31 @@
                         Found {{ results|length }} movies matching "{{ query }}"
                     </div>
                     
+                    <h2 class="section-title">Search Results</h2>
+                    
                     <div class="movie-grid">
                         {% for movie in results %}
-                       <div class="movie-card">
-    {% if movie.poster_url %}
-    <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="movie-poster">
-    {% else %}
-    <div class="no-poster">🎬</div>
-    {% endif %}
-    
-    <h3>{{ movie.title }}</h3>
-    <span class="movie-rating">⭐ {{ movie.vote_average }}/10</span>
-    <p class="movie-overview">{{ movie.overview[:150] }}...</p>
-    <p class="movie-meta">📅 {{ movie.release_date }}</p>
-</div>
-
+                        <div class="movie-card">
+                            {% if movie.poster_url %}
+                            <img src="{{ movie.poster_url }}" 
+                                 alt="{{ movie.title_x }}" 
+                                 class="movie-poster"
+                                 loading="lazy">
+                            {% else %}
+                            <div class="no-poster">🎬</div>
+                            {% endif %}
+                            
+                            <h3>{{ movie.title_x }}</h3>
+                            
+                            <div style="margin-bottom: 0.75rem;">
+                                <span class="movie-rating">⭐ {{ movie.vote_average }}/10</span>
+                                <span class="similarity-badge">📊 {{ movie.vote_count }} votes</span>
+                            </div>
+                            
+                            <p class="movie-genres">🎭 {{ movie.genres }}</p>
+                            <p class="movie-overview">{{ movie.overview[:150] }}{% if movie.overview|length > 150 %}...{% endif %}</p>
+                            <p class="movie-meta">📅 {{ movie.release_date }}</p>
+                        </div>
                         {% endfor %}
                     </div>
                 {% else %}
@@ -71,14 +75,4 @@
             {% endif %}
         </div>
     </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>Built with ❤️ using Flask, Python, and TMDB Dataset</p>
-        </div>
-    </footer>
-
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
-</html>
+{% endblock %}
