@@ -51,6 +51,34 @@ class MovieRecommender:
         
         return self.movies_df
     
+    def build_content_based_model(self):
+        """Build content-based model with aggressive memory optimization"""
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.metrics.pairwise import linear_kernel
+    
+    # AGGRESSIVE memory limits
+        tfidf = TfidfVectorizer(
+             max_features=3000,    # Limit vocabulary size (was unlimited)
+            max_df=0.8,           # Ignore very common words
+            min_df=5,             # Ignore very rare words (was 2)
+            stop_words='english', # Remove stop words
+            dtype='float32'       # Use 32-bit instead of 64-bit
+        )
+    
+    # Build TF-IDF matrix
+        tfidf_matrix = tfidf.fit_transform(self.movies_df['soup'])
+    
+    # Use linear_kernel instead of cosine_similarity (more memory efficient)
+        self.cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
+    
+    # Convert to float32 to save memory
+        self.cosine_sim = self.cosine_sim.astype('float32')
+    
+        print(f"✓ Model built with {tfidf_matrix.shape} matrix (optimized)")
+    
+        return self.cosine_sim
+
+    
     def _parse_features(self, x):
         """Parse JSON features"""
         try:

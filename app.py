@@ -19,8 +19,17 @@ try:
     print("=" * 50)
     
     # Load ONLY 2000 rows to fit in 512MB RAM
-    recommender.movies_df = pd.read_csv('tmdb_5000_movies.csv', nrows=2000)
-    recommender.credits_df = pd.read_csv('tmdb_5000_credits.csv', nrows=2000)
+    # Load ONLY 1000 movies (not 2000) for ultra-low memory
+    recommender.movies_df = pd.read_csv('tmdb_5000_movies.csv', 
+                                    nrows=1000,
+                                    usecols=['id', 'title', 'genres', 'keywords', 
+                                            'overview', 'vote_average', 'vote_count', 
+                                            'release_date'])  # Load only needed columns
+
+    recommender.credits_df = pd.read_csv('tmdb_5000_credits.csv', 
+                                     nrows=1000,
+                                     usecols=['movie_id', 'cast', 'crew'])  # Load only needed columns
+
     
     print(f"✓ Loaded {len(recommender.movies_df)} movies")
     
