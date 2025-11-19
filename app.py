@@ -18,9 +18,11 @@ try:
     )
     recommender.preprocess_data()
     recommender.build_content_based_model()
-    print("✓ Data loaded successfully")
 except Exception as e:
-    print(f"Error loading data: {e}")
+    print(f"ERROR loading data: {e}")
+    import traceback
+    traceback.print_exc()
+
 
 # Try to initialize Groq (optional - won't break app if no API key)
 try:
