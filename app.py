@@ -1,49 +1,60 @@
-from pydoc import text
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-from recommendation_engine import MovieRecommender, GroqMovieEnhancer
+from recommendation_engine import MovieRecommender, GroqMovieEnhancer, TMDBHelper
+import pandas as pd
 import json
 import re
-
+import os
 
 app = Flask(__name__)
 
-# Initialize recommender systems (ONLY ONCE)
+# Initialize recommender systems
 recommender = MovieRecommender()
-groq_enhancer = None  # Initialize after checking if API key exists
-
-try:
-    recommender.load_data(
-        movies_path='tmdb_5000_movies.csv',
-        credits_path='tmdb_5000_credits.csv'
-    )
-    recommender.preprocess_data()
-    recommender.build_content_based_model()
-except Exception as e:
-    print(f"ERROR loading data: {e}")
-    import traceback
-    traceback.print_exc()
-
-
-# Try to initialize Groq (optional - won't break app if no API key)
-try:
-    groq_enhancer = GroqMovieEnhancer()
-    print("✓ Groq AI initialized successfully")
-except Exception as e:
-    print(f"⚠ Groq AI not available: {e}")
-    print("AI features will be disabled. Add GROQ_API_KEY to .env to enable.")
-
-from recommendation_engine import MovieRecommender, GroqMovieEnhancer, TMDBHelper
-
-# Initialize all helpers
-
+groq_enhancer = None
 tmdb_helper = None
 
-# ... existing recommender initialization ...
+# ============= MEMORY-OPTIMIZED DATA LOADING =============
+try:
+    print("=" * 50)
+    print("Loading data with memory optimization (2000 movies)...")
+    print("=" * 50)
+    
+    # Load ONLY 2000 rows to fit in 512MB RAM
+    recommender.movies_df = pd.read_csv('tmdb_5000_movies.csv', nrows=2000)
+    recommender.credits_df = pd.read_csv('tmdb_5000_credits.csv', nrows=2000)
+    
+    print(f"✓ Loaded {len(recommender.movies_df)} movies")
+    
+    # Preprocess data
+    recommender.preprocess_data()
+    print("✓ Data preprocessed")
+    
+    # Build recommendation model
+    recommender.build_content_based_model()
+    print("✓ Content-based model built")
+    
+    print("=" * 50)
+    print("SUCCESS: Recommender ready!")
+    print("=" * 50)
+    
+except Exception as e:
+    print("=" * 50)
+    print(f"ERROR loading data: {e}")
+    print("=" * 50)
+    import traceback
+    traceback.print_exc()
+    recommender = None
 
-# Initialize TMDB
+# Initialize Groq AI (optional)
+try:
+    groq_enhancer = GroqMovieEnhancer()
+    print("✓ Groq AI initialized")
+except Exception as e:
+    print(f"⚠ Groq AI not available: {e}")
+
+# Initialize TMDB API (optional)
 try:
     tmdb_helper = TMDBHelper()
-    print("✓ TMDB API initialized successfully")
+    print("✓ TMDB API initialized")
 except Exception as e:
     print(f"⚠ TMDB API not available: {e}")
 
@@ -55,17 +66,18 @@ def index():
     """Home page with featured movies"""
     if recommender is None:
         return render_template('error.html',
-        message="Movie database not loaded.")
+                             message="Movie database not loaded."), 500
+    
     try:
-    # Get top rated movies
+        # Get top rated movies
         top_movies_df = recommender.build_popularity_model().head(6)
         movies_list = []
-    
-    # Enhance each movie with TMDB poster
+        
+        # Enhance each movie with TMDB poster
         for _, movie in top_movies_df.iterrows():
             movie_dict = movie.to_dict()
-        
-        # Try to get poster from TMDB
+            
+            # Try to get poster from TMDB
             if tmdb_helper:
                 tmdb_data = tmdb_helper.search_movie(movie['title_x'])
                 if tmdb_data:
@@ -74,53 +86,52 @@ def index():
                     movie_dict['poster_url'] = None
             else:
                 movie_dict['poster_url'] = None
-        
+            
             movies_list.append(movie_dict)
-    
-    # Get statistics
+        
+        # Get statistics
         stats = {
             'total_movies': len(recommender.movies_df),
             'avg_rating': round(recommender.movies_df['vote_average'].mean(), 1),
             'total_genres': len(recommender.movies_df['genres'].unique())
         }
-    
+        
         return render_template('index.html', 
-                         movies=movies_list,
-                         stats=stats)
+                             movies=movies_list,
+                             stats=stats)
+    
     except Exception as e:
         return render_template('error.html', 
-                         message=f"Error: {str(e)}")
-
+                             message=f"Error: {str(e)}"), 500
 
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     """Search for movies"""
     if request.method == 'POST':
-        query = request.form.get('query', '')
+        query = request.form.get('query', '').strip()
         if query:
             results = recommender.search_movies(query)
             
             # Enhance with TMDB posters
-            if tmdb_helper:
-                enhanced_results = []
-                for _, movie in results.iterrows():
-                    movie_dict = movie.to_dict()
+            enhanced_results = []
+            for _, movie in results.iterrows():
+                movie_dict = movie.to_dict()
+                if tmdb_helper:
                     tmdb_data = tmdb_helper.search_movie(movie['title_x'])
                     if tmdb_data:
                         movie_dict['poster_url'] = tmdb_data['poster_url']
                     else:
                         movie_dict['poster_url'] = None
-                    enhanced_results.append(movie_dict)
-                
-                return render_template('search.html', 
-                                      results=enhanced_results,
-                                      query=query)
+                else:
+                    movie_dict['poster_url'] = None
+                enhanced_results.append(movie_dict)
             
             return render_template('search.html', 
-                                  results=results.to_dict('records'),
-                                  query=query)
-    return render_template('search.html', results=[], query='')
+                                 results=enhanced_results,
+                                 query=query)
+    
+    return render_template('search.html', results=None, query=None)
 
 
 @app.route('/recommendations', methods=['GET', 'POST'])
@@ -141,7 +152,6 @@ def recommendations():
             for _, movie in recs.iterrows():
                 movie_dict = movie.to_dict()
                 
-                # Fetch poster from TMDB
                 if tmdb_helper:
                     tmdb_data = tmdb_helper.search_movie(movie['title_x'])
                     if tmdb_data:
@@ -154,9 +164,9 @@ def recommendations():
                 enhanced_recs.append(movie_dict)
             
             return render_template('recommendations.html',
-                                  movie_titles=movie_titles,
-                                  recommendations=enhanced_recs,
-                                  selected_movie=selected_movie)
+                                 movie_titles=movie_titles,
+                                 recommendations=enhanced_recs,
+                                 selected_movie=selected_movie)
     
     return render_template('recommendations.html', 
                           movie_titles=movie_titles,
@@ -175,7 +185,6 @@ def top_rated():
     for _, movie in top_movies_df.iterrows():
         movie_dict = movie.to_dict()
         
-        # Fetch poster from TMDB
         if tmdb_helper:
             tmdb_data = tmdb_helper.search_movie(movie['title_x'])
             if tmdb_data:
@@ -196,7 +205,7 @@ def genre():
     # Extract unique genres
     all_genres = set()
     for genres_str in recommender.movies_df['genres']:
-        for g in genres_str.split():
+        for g in str(genres_str).split():
             if g:
                 all_genres.add(g)
     
@@ -218,7 +227,6 @@ def genre():
             for _, movie in genre_movies_df.iterrows():
                 movie_dict = movie.to_dict()
                 
-                # Fetch poster from TMDB
                 if tmdb_helper:
                     tmdb_data = tmdb_helper.search_movie(movie['title_x'])
                     if tmdb_data:
@@ -231,9 +239,9 @@ def genre():
                 enhanced_movies.append(movie_dict)
             
             return render_template('genre.html',
-                                  genres=genre_list,
-                                  movies=enhanced_movies,
-                                  selected_genre=selected_genre)
+                                 genres=genre_list,
+                                 movies=enhanced_movies,
+                                 selected_genre=selected_genre)
     
     return render_template('genre.html', 
                           genres=genre_list,
@@ -247,7 +255,7 @@ def statistics():
     # Genre distribution
     genre_counts = {}
     for genres_str in recommender.movies_df['genres']:
-        for genre in genres_str.split():
+        for genre in str(genres_str).split():
             if genre:
                 genre_counts[genre] = genre_counts.get(genre, 0) + 1
     
@@ -265,7 +273,8 @@ def statistics():
     
     return render_template('statistics.html', stats=stats)
 
-# ============= AI-POWERED ROUTES (Optional) =============
+
+# ============= AI-POWERED ROUTES =============
 
 @app.route('/ai-recommendations', methods=['GET', 'POST'])
 def ai_recommendations():
@@ -274,48 +283,48 @@ def ai_recommendations():
     if groq_enhancer is None:
         return render_template(
             'error.html',
-            message="AI features are not available. Please add GROQ_API_KEY to .env file."
-        )
-
+            message="AI features are not available. Please add GROQ_API_KEY to environment variables."
+        ), 500
+    
     genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance',
               'Sci-Fi', 'Thriller', 'Adventure', 'Animation', 'Fantasy']
-
+    
     moods = ['Uplifting', 'Intense', 'Relaxing', 'Thrilling',
              'Emotional', 'Fun', 'Mysterious', 'Inspiring']
-
+    
     if request.method == 'POST':
         selected_genre = request.form.get('genre')
         selected_mood = request.form.get('mood')
         num_movies = int(request.form.get('num_movies', 5))
-
-        # 🧠 Get AI response (text with possible Markdown and JSON)
+        
+        # Get AI response
         ai_response = groq_enhancer.get_ai_recommendations(
             genre=selected_genre if selected_genre != 'Any' else None,
             mood=selected_mood if selected_mood != 'Any' else None,
             num_movies=num_movies
         )
-
+        
         movies_data = None
-
+        
         try:
-            # 🧹 1️⃣ Extract JSON from markdown code block: ```[ ... ]```
-            json_match = re.search(r'```(.*?)```', ai_response, re.DOTALL)
+            # Extract JSON from markdown code block
+            json_match = re.search(r'``````', ai_response, re.DOTALL)
             if json_match:
                 json_str = json_match.group(1).strip()
+                # Remove 'json' language identifier if present
+                if json_str.startswith('json'):
+                    json_str = json_str[4:].strip()
                 movies_data = json.loads(json_str)
             else:
-                # 🧩 2️⃣ If no code block, try finding JSON array directly
+                # Try finding JSON array directly
                 json_match = re.search(r'\[.*\]', ai_response, re.DOTALL)
                 if json_match:
                     json_str = json_match.group(0)
                     movies_data = json.loads(json_str)
-                else:
-                    # 🧩 3️⃣ As a last resort, try entire response
-                    movies_data = json.loads(ai_response)
         except (json.JSONDecodeError, AttributeError) as e:
             print(f"⚠️ JSON parsing error: {e}")
             movies_data = None
-
+        
         return render_template(
             'ai_recommendations.html',
             genres=genres,
@@ -325,7 +334,7 @@ def ai_recommendations():
             selected_genre=selected_genre,
             selected_mood=selected_mood
         )
-
+    
     return render_template(
         'ai_recommendations.html',
         genres=genres,
@@ -334,14 +343,14 @@ def ai_recommendations():
         ai_response=None
     )
 
+
 @app.route('/movie-chat', methods=['GET', 'POST'])
 def movie_chat():
     """Interactive movie chat powered by Groq"""
     
-    # Check if Groq is available
     if groq_enhancer is None:
         return render_template('error.html', 
-                             message="AI Chat is not available. Please add GROQ_API_KEY to .env file.")
+                             message="AI Chat is not available. Please add GROQ_API_KEY to environment variables."), 500
     
     if request.method == 'POST':
         user_message = request.form.get('message')
@@ -357,14 +366,14 @@ def movie_chat():
                          user_message=None,
                          ai_response=None)
 
+
 @app.route('/enhanced-details/<movie_title>')
 def enhanced_details(movie_title):
     """Show enhanced movie details with AI insights"""
     
-    # Check if Groq is available
     if groq_enhancer is None:
         return render_template('error.html', 
-                             message="AI enhancement is not available. Please add GROQ_API_KEY to .env file.")
+                             message="AI enhancement is not available."), 500
     
     # Get movie from dataset
     movie_data = recommender.movies_df[
@@ -372,7 +381,7 @@ def enhanced_details(movie_title):
     ]
     
     if len(movie_data) == 0:
-        return "Movie not found", 404
+        return render_template('error.html', message="Movie not found"), 404
     
     movie = movie_data.iloc[0]
     
@@ -386,6 +395,41 @@ def enhanced_details(movie_title):
                          movie=movie.to_dict(),
                          enhanced_description=enhanced_desc)
 
+
+@app.route('/browse-enhanced')
+def browse_enhanced():
+    """Browse movies to see enhanced details"""
+    movie_titles = sorted(recommender.movies_df['title_x'].unique())
+    return render_template('browse_enhanced.html', movie_titles=movie_titles)
+
+
+@app.route('/trending')
+def trending():
+    """Show trending movies from TMDB"""
+    if tmdb_helper is None:
+        return render_template('error.html', 
+                             message="TMDB API not available. Please add TMDB_API_KEY to environment variables."), 500
+    
+    trending_movies = tmdb_helper.get_trending_movies()
+    
+    return render_template('trending.html', 
+                          movies=trending_movies)
+
+
+@app.route('/discover')
+def discover():
+    """Discover new movies from TMDB"""
+    if tmdb_helper is None:
+        return render_template('error.html',
+                             message="TMDB API not available."), 500
+    
+    popular_movies = tmdb_helper.get_popular_movies(page=1)
+    
+    return render_template('discover.html', 
+                          movies=popular_movies,
+                          page_title="Discover New Movies")
+
+
 # ============= API ENDPOINTS =============
 
 @app.route('/api/search/<query>')
@@ -393,6 +437,7 @@ def api_search(query):
     """API endpoint for search"""
     results = recommender.search_movies(query)
     return jsonify(results.to_dict('records'))
+
 
 @app.route('/api/recommend/<movie>')
 def api_recommend(movie):
@@ -404,53 +449,22 @@ def api_recommend(movie):
         return jsonify(recs.to_dict('records'))
     return jsonify({'error': 'Movie not found'}), 404
 
-# ============= ERROR HANDLER =============
+
+# ============= ERROR HANDLERS =============
 
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('error.html', message="Page not found"), 404
 
 
-@app.route('/browse-enhanced')
-def browse_enhanced():
-    """Browse movies to see enhanced details"""
-    movie_titles = sorted(recommender.movies_df['title_x'].unique())
-    return render_template('browse_enhanced.html', movie_titles=movie_titles)
+@app.errorhandler(500)
+def internal_error(e):
+    return render_template('error.html', message="Internal server error"), 500
 
-@app.route('/trending')
-def trending():
-    """Show trending movies from TMDB"""
-    if tmdb_helper is None:
-        return render_template('error.html', 
-                             message="TMDB API not available. Please add TMDB_API_KEY to .env file.")
-    
-    trending_movies = tmdb_helper.get_trending_movies()
-    
-    return render_template('trending.html', 
-                          movies=trending_movies)
-
-@app.route('/discover')
-def discover():
-    """Discover new movies from TMDB (not in CSV)"""
-    if tmdb_helper is None:
-         return render_template('error.html',
-        message="TMDB API not available.")
-
-
-    popular_movies = tmdb_helper.get_popular_movies(page=1)
-
-    return render_template('discover.html', 
-                      movies=popular_movies,
-                      page_title="Discover New Movies")
 
 # ============= RUN APP =============
 
-# At the bottom of app.py
 if __name__ == '__main__':
-    import os
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
-
-
-
+    port = int(os.environ.get('PORT', 8080))  # ← Changed from 5000 to 8080
+    app.run(host='0.0.0.0', port=port, debug=False)
 
